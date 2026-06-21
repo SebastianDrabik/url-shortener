@@ -1,3 +1,5 @@
+/*THEME: https://tweakcn.com/themes/cmp5ujeoo000404jpeaed3kcv*/
+
 @import "tailwindcss";
 
 @custom-variant dark (&:is(.dark *));
