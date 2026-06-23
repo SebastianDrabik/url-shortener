@@ -20,7 +20,11 @@ function Home() {
     const navigate = Route.useNavigate();
     const [linkExpires, setLinkExpires] = useState<boolean>(false);
     const [longUrl, setLongUrl] = useState<string>('');
-    const [expiration, setExpiration] = useState<string>(new Date().toISOString().split('T')[0]);
+    const [expiration, setExpiration] = useState<string>(() => {
+        const tmrw = new Date()
+        tmrw.setDate(tmrw.getDate() + 1)
+        return tmrw.toISOString().split('T')[0]
+    });
 
     const {mutateAsync: shorten, isPending} = useMutation({
         mutationFn: async (data: { longUrl: string; expiresAt?: Date }) => {

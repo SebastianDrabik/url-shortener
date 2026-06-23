@@ -9,10 +9,10 @@ import {eq} from "drizzle-orm";
 export const createShortLink = createServerFn({method: 'POST'})
     .validator(z.object({
         longUrl: z.url(),
-        expiresAt: z.date().optional(),
+        expiresAt: z.date().min(new Date()).optional(),
     }))
     .handler((r): ({success: false} | {success: true, generatedShort: string, ownerCode: string}) => {
-        const shortUrl = randomString(5);
+        const shortUrl = randomString(6).toUpperCase();
         const ownerCode = randomString(16);
 
         const res = db.insert(linksTable).values({
@@ -72,11 +72,16 @@ export const getRedirectLink = createServerFn({method: 'POST'})
     .handler(async (r): Promise<{success: false, message: string} | {success: true, redirect: string}> => {
         const linkData = await db.select().from(linksTable).where(eq(linksTable.shortUrl, r.data.shortUrl));
 
-        if (linkData.length === 0) {
+        if (linkData.length === 0)
             return {success: false, message: 'Link does not exist'};
-        }
 
         const userLink = linkData[0]
+
+        if (userLink.expiresAt && (new Date()) > userLink.expiresAt)
+            return {success: false, message: 'Link has expired'};
+
+        if (!userLink.active)
+            return {success: false, message: 'Link is not active'};
 
         return {
             success: true,
