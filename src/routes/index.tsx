@@ -14,7 +14,14 @@ import {useMutation, useQueryClient} from "@tanstack/react-query";
 import {createShortLink} from "#/functions/links.ts";
 import {Spinner} from "#/components/ui/spinner.tsx";
 
-export const Route = createFileRoute('/')({component: Home})
+export const Route = createFileRoute('/')({
+    component: Home,
+    head: () => ({
+        meta: [
+            {title: 'URL shortener - shorten a link'},
+        ]
+    })
+})
 
 function Home() {
     const navigate = Route.useNavigate();
@@ -69,7 +76,7 @@ function Home() {
                                 expiresAt: linkExpires ? new Date(expiration) : undefined
                             }).then(data => {
                                 if(data.success) {
-                                    navigate({to: '/manage/$url', search: {code: data.ownerCode}, params: {url: data.generatedShort}});
+                                    navigate({to: '/manage/$url', search: {ownerCode: data.ownerCode}, params: {url: data.generatedShort}});
                                 }
                             })
                         }}>{isPending && <Spinner data-icon="inline-start"/>} Shorten</Button>

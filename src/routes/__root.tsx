@@ -19,12 +19,52 @@ export const Route = createRootRoute({
       {
         title: 'URL Shortener',
       },
+      {
+        name: 'description',
+        content: 'Simple URL shortener app',
+      },
+      {
+        name: 'og:title',
+        content: 'URL shortener',
+      },
+      {
+        name: 'twitter:title',
+        content: 'URL shortener',
+      },
+      {
+        name: 'og:description',
+        content: 'Simple URL shortener app by Sebastian Drabik',
+      },
+      {
+        name: 'twitter:description',
+        content: 'Simple URL shortener app by Sebastian Drabik',
+      },
+      {
+        name: 'og:image',
+        content: '/icon.svg',
+      },
+      {
+        name: 'twitter:image',
+        content: '/icon.svg',
+      },
+      {
+        name: 'og:url',
+        content: 'https://url.sdrabik.dev/',
+      },
+      {
+        name: 'twitter:url',
+        content: 'https://url.sdrabik.dev/',
+      }
     ],
     links: [
       {
         rel: 'stylesheet',
         href: appCss,
       },
+      {
+        rel: 'icon',
+        href: '/icon.svg'
+      }
     ],
   }),
   shellComponent: RootDocument,

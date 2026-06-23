@@ -24,12 +24,17 @@ import {Switch} from "#/components/ui/switch.tsx";
 
 export const Route = createFileRoute('/manage/$url')({
     component: RouteComponent,
-    validateSearch: z.object({code: z.string()}),
+    validateSearch: z.object({ownerCode: z.string()}),
+    head: () => ({
+        meta: [
+            {title: 'URL shortener - manage your link'},
+        ]
+    })
 })
 
 function RouteComponent() {
     const {url: shortLink} = Route.useParams()
-    const {code: ownerCode} = Route.useSearch()
+    const {ownerCode} = Route.useSearch()
 
     const { error, data, isPending } = useQuery({
         queryKey: ['shortlink', shortLink],
