@@ -4,7 +4,7 @@ import {randomString} from "#/lib/random.ts";
 
 import {db} from '#/db'
 import {linksTable} from "#/db/schema.ts";
-import {eq} from "drizzle-orm";
+import {and, eq, ne} from "drizzle-orm";
 
 export const createShortLink = createServerFn({method: 'POST'})
     .validator(z.object({
@@ -87,4 +87,49 @@ export const getRedirectLink = createServerFn({method: 'POST'})
             success: true,
             redirect: userLink.longUrl
         }
+    })
+
+export const updateShortLink = createServerFn({method: 'POST'})
+    .validator(z.object({
+        shortUrl: z.string(),
+        ownerCode: z.string(),
+        alias: z.string().optional(),
+        longUrl: z.url(),
+        expires: z.boolean(),
+        expiresAt: z.date().min(new Date()).optional(),
+        active: z.boolean(),
+    }))
+    .handler(async (r): Promise<{success: false, message: string, field?: string} | {success: true}> => {
+        const linkData = await db.select().from(linksTable).where(eq(linksTable.shortUrl, r.data.shortUrl));
+
+        if (linkData.length === 0)
+            return {success: false, message: 'Link does not exist'};
+
+        const link = linkData[0];
+
+        if (link.ownerCode !== r.data.ownerCode)
+            return {success: false, message: 'Owner code is not valid'};
+
+        if (r.data.alias) {
+            const conflictingAlias = await db.select().from(linksTable).where(
+                and(
+                    eq(linksTable.alias, r.data.alias),
+                    ne(linksTable.shortUrl, r.data.shortUrl)
+                )
+            );
+            if (conflictingAlias.length > 0)
+                return {success: false, message: 'This alias is already taken', field: 'alias'};
+        }
+
+        const updateRes = await db.update(linksTable).set({
+            longUrl: r.data.longUrl,
+            alias: r.data.alias,
+            expiresAt: r.data.expires ? r.data.expiresAt : null,
+            active: r.data.active
+        }).where(eq(linksTable.shortUrl, r.data.shortUrl));
+
+        if(updateRes.changes > 0)
+           return {success: true};
+
+        return {success: false, message: 'An error occured. Please try again later.'};
     })

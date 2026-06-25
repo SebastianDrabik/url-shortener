@@ -7,7 +7,7 @@ export const linksTable = sqliteTable('links', {
   expiresAt: integer('expires_at', {mode: 'timestamp'}).default(sql`null`),
   active: integer('is_active', {mode: 'boolean'}).default(sql`1`),
   ownerCode: text('owner_code').notNull(),
-  alias: text('alias'),
+  alias: text('alias').unique(),
   createdAt: integer('created_at', { mode: 'timestamp' }).default(
       sql`(unixepoch())`,
   ),

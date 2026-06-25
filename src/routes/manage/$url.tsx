@@ -3,11 +3,11 @@ import * as z from 'zod'
 import {Card} from "#/components/ui/card.tsx";
 import ms from "#/assets/ms.svg";
 import {Footer} from "#/components/Footer.tsx";
-import {getLinkData, } from "#/functions/links.ts";
+import {getLinkData, updateShortLink,} from "#/functions/links.ts";
 import {copyToClipboard} from "#/lib/clipboardUtil.ts";
 import {
     Field,
-    FieldDescription,
+    FieldDescription, FieldError,
     FieldGroup,
     FieldLabel,
     FieldSet
@@ -20,6 +20,9 @@ import {InputGroup, InputGroupAddon, InputGroupInput, InputGroupText} from "#/co
 import {Switch} from "#/components/ui/switch.tsx";
 import {useForm} from "@tanstack/react-form-start";
 import {linksTable} from "#/db/schema.ts";
+import {Checkbox} from "#/components/ui/checkbox.tsx";
+import {Field as FieldComp, FieldGroup as FieldGroupComp} from "#/components/ui/field.tsx";
+import {DatePicker} from "#/components/ui/date-picker.tsx";
 
 export const Route = createFileRoute('/manage/$url')({
     component: RouteComponent,
@@ -36,7 +39,7 @@ function RouteComponent() {
     const {ownerCode} = Route.useSearch()
     const queryClient = useQueryClient()
 
-    const {error, data, isPending} = useQuery({
+    const {data, isPending} = useQuery({
         queryKey: ['shortlink', shortLink],
         queryFn: async () => {
             return await getLinkData({data: {shortUrl: shortLink, ownerCode}})
@@ -61,9 +64,16 @@ function ManageForm({link, shortLink, ownerCode}: {
     const queryClient = useQueryClient()
 
     const {mutateAsync: update} = useMutation({
-        mutationFn: async (data: { alias?: string; longUrl: string; active: boolean }) => {
-            // return await updateShortLink({data: {shortUrl: shortLink, ownerCode, ...data}})
-            return
+        mutationFn: async (data: {
+            shortUrl: string;
+            ownerCode: string;
+            alias?: string;
+            longUrl: string;
+            active: boolean;
+            expires: boolean;
+            expiresAt?: Date;
+        }) => {
+            return await updateShortLink({data})
         },
         onSuccess: () => {
             queryClient.invalidateQueries({queryKey: ['shortlink', shortLink]})
@@ -74,21 +84,48 @@ function ManageForm({link, shortLink, ownerCode}: {
         defaultValues: {
             alias: link.alias ?? '',
             longUrl: link.longUrl,
-            active: link.active,
+            active: !!link.active,
+            linkExpires: !!link.expiresAt,
+            expiresAt: link.expiresAt ? new Date(link.expiresAt) : undefined as Date | undefined,
         },
         validators: {
             onSubmit: z.object({
                 alias: z.string().optional(),
                 longUrl: z.url(),
                 active: z.boolean(),
-            })
+                linkExpires: z.boolean(),
+                expiresAt: z.date().optional(),
+            }).refine(
+                (val) => !val.linkExpires || val.expiresAt !== undefined,
+                {message: 'Please select an expiration date', path: ['expiresAt']}
+            )
         },
         onSubmit: async ({value}) => {
-            await update({
+            const result = await update({
+                shortUrl: shortLink,
+                ownerCode,
                 alias: value.alias || undefined,
                 longUrl: value.longUrl,
                 active: !!value.active,
-            })
+                expires: value.linkExpires,
+                expiresAt: value.linkExpires ? value.expiresAt : undefined,
+            });
+
+            if (!result.success) {
+                if (result.field) {
+                    form.setFieldMeta(result.field as keyof typeof form.state.values, (meta) => ({
+                        ...meta,
+                        errors: [result.message],
+                        errorMap: {onSubmit: result.message},
+                    }));
+                } else {
+                    form.setFieldMeta('longUrl', (meta) => ({
+                        ...meta,
+                        errors: [result.message],
+                        errorMap: {onSubmit: result.message},
+                    }));
+                }
+            }
         }
     })
 
@@ -184,11 +221,7 @@ function ManageForm({link, shortLink, ownerCode}: {
                                                     onChange={(e) => field.handleChange(e.target.value)}
                                                     onBlur={field.handleBlur}
                                                 />
-                                                {field.state.meta.errors.length > 0 && (
-                                                    <p className="text-destructive text-sm">
-                                                        {field.state.meta.errors[0]}
-                                                    </p>
-                                                )}
+                                                <FieldError errors={field.state.meta.errors} />
                                             </Field>
                                         )}
                                     </form.Field>
@@ -205,6 +238,43 @@ function ManageForm({link, shortLink, ownerCode}: {
                                             </Field>
                                         )}
                                     </form.Field>
+
+                                    <form.Field name="linkExpires">
+                                        {(field) => (
+                                            <FieldGroupComp>
+                                                <FieldComp orientation="horizontal">
+                                                    <Checkbox
+                                                        id="link-expires"
+                                                        checked={field.state.value}
+                                                        onCheckedChange={(checked) => field.handleChange(!!checked)}
+                                                    />
+                                                    <FieldLabel htmlFor="link-expires">
+                                                        I want to set expiration date
+                                                    </FieldLabel>
+                                                </FieldComp>
+                                            </FieldGroupComp>
+                                        )}
+                                    </form.Field>
+
+                                    <form.Subscribe selector={(state) => state.values.linkExpires}>
+                                        {(linkExpires) => linkExpires && (
+                                            <form.Field name="expiresAt">
+                                                {(field) => (
+                                                    <Field>
+                                                        <FieldLabel htmlFor="expires-at">Expiration date</FieldLabel>
+                                                        <DatePicker
+                                                            id="expires-at"
+                                                            value={field.state.value}
+                                                            onChange={(date) => field.handleChange(date)}
+                                                            onBlur={field.handleBlur}
+                                                            placeholder="Pick an expiration date"
+                                                        />
+                                                        <FieldError errors={field.state.meta.errors} />
+                                                    </Field>
+                                                )}
+                                            </form.Field>
+                                        )}
+                                    </form.Subscribe>
 
                                     <ButtonGroup className='ml-auto'>
                                         <Button
