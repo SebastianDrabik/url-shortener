@@ -3,7 +3,7 @@ import * as z from 'zod'
 import {Card} from "#/components/ui/card.tsx";
 import ms from "#/assets/ms.svg";
 import {Footer} from "#/components/Footer.tsx";
-import {getLinkData, updateShortLink,} from "#/functions/links.ts";
+import {getLinkData, updateShortLink, updateShortLinkValidationSchema,} from "#/functions/links.ts";
 import {copyToClipboard} from "#/lib/clipboardUtil.ts";
 import {
     Field,
@@ -56,6 +56,11 @@ function RouteComponent() {
     return <ManageForm link={link} shortLink={shortLink} ownerCode={ownerCode}/>
 }
 
+const formSchema = updateShortLinkValidationSchema.refine(
+    (val) => !val.expires || val.expiresAt !== undefined,
+    { message: 'Please select an expiration date', path: ['expiresAt'] }
+);
+
 function ManageForm({link, shortLink, ownerCode}: {
     link: typeof linksTable.$inferSelect;
     shortLink: string;
@@ -80,54 +85,47 @@ function ManageForm({link, shortLink, ownerCode}: {
         }
     }, queryClient)
 
+    type FormValues = z.infer<typeof formSchema>;
+
     const form = useForm({
         defaultValues: {
-            alias: link.alias ?? '',
+            alias: link.alias || '',
             longUrl: link.longUrl,
             active: !!link.active,
-            linkExpires: !!link.expiresAt,
-            expiresAt: link.expiresAt ? new Date(link.expiresAt) : undefined as Date | undefined,
-        },
+            expires: !!link.expiresAt,
+            expiresAt: link.expiresAt ? new Date(link.expiresAt) : undefined,
+        } as FormValues,
         validators: {
-            onSubmit: z.object({
-                alias: z.string().optional(),
-                longUrl: z.url(),
-                active: z.boolean(),
-                linkExpires: z.boolean(),
-                expiresAt: z.date().optional(),
-            }).refine(
-                (val) => !val.linkExpires || val.expiresAt !== undefined,
-                {message: 'Please select an expiration date', path: ['expiresAt']}
-            )
+            onSubmit: formSchema,
+            onChange: formSchema,
         },
-        onSubmit: async ({value}) => {
+        onSubmit: async ({ value, formApi }) => {
             const result = await update({
                 shortUrl: shortLink,
                 ownerCode,
-                alias: value.alias || undefined,
+                alias: value.alias,
                 longUrl: value.longUrl,
                 active: !!value.active,
-                expires: value.linkExpires,
-                expiresAt: value.linkExpires ? value.expiresAt : undefined,
+                expires: value.expires,
+                expiresAt: value.expires ? value.expiresAt : undefined,
             });
 
             if (!result.success) {
                 if (result.field) {
-                    form.setFieldMeta(result.field as keyof typeof form.state.values, (meta) => ({
-                        ...meta,
-                        errors: [result.message],
-                        errorMap: {onSubmit: result.message},
-                    }));
+                    formApi.setFieldMeta(
+                        result.field as keyof FormValues,
+                        (meta) => ({
+                            ...meta,
+                            errors: [result.message],
+                            errorMap: { ...meta.errorMap, onSubmit: result.message },
+                        })
+                    );
                 } else {
-                    form.setFieldMeta('longUrl', (meta) => ({
-                        ...meta,
-                        errors: [result.message],
-                        errorMap: {onSubmit: result.message},
-                    }));
+                    throw new Error(result.message);
                 }
             }
         }
-    })
+    });
 
     return (
         <div className="p-8">
@@ -142,11 +140,20 @@ function ManageForm({link, shortLink, ownerCode}: {
                     </div>
                     <main className='h-full'>
                         <h2 className='text-center my-3 text-3xl'>Manage your link</h2>
-                        <p className='text-muted-foreground'>
+                        <p className='text-muted-foreground mb-4'>
                             You are managing the link <span className='font-bold'>{link.shortUrl}</span> with
                             the owner code <span className='font-bold'>{link.ownerCode}</span>. The link leads
                             to <span className='font-bold'>{link.longUrl}</span>.
                         </p>
+
+                        {/* Display global server errors */}
+                        <form.Subscribe selector={(state) => state.errorMap.onSubmit}>
+                            {(submitError) => submitError ? (
+                                <div className="bg-destructive/15 text-destructive p-3 rounded-md mb-4 text-sm font-medium">
+                                    {submitError instanceof Error ? submitError.message : String(submitError)}
+                                </div>
+                            ) : null}
+                        </form.Subscribe>
 
                         <form onSubmit={(e) => {
                             e.preventDefault()
@@ -202,6 +209,7 @@ function ManageForm({link, shortLink, ownerCode}: {
                                                         )}
                                                     </form.Subscribe>
                                                 </ButtonGroup>
+                                                <FieldError errors={field.state.meta.errors} />
                                                 <FieldDescription>
                                                     You can set your own alias for the short link. Both the generated
                                                     URL and alias will work.
@@ -232,14 +240,14 @@ function ManageForm({link, shortLink, ownerCode}: {
                                                 <FieldLabel htmlFor="enb">Enabled</FieldLabel>
                                                 <Switch
                                                     id="enb"
-                                                    checked={!!field.state.value}
-                                                    onCheckedChange={(checked) => field.handleChange(!!checked)}
+                                                    checked={field.state.value}
+                                                    onCheckedChange={(checked) => field.handleChange(checked)}
                                                 />
                                             </Field>
                                         )}
                                     </form.Field>
 
-                                    <form.Field name="linkExpires">
+                                    <form.Field name="expires">
                                         {(field) => (
                                             <FieldGroupComp>
                                                 <FieldComp orientation="horizontal">
@@ -256,8 +264,8 @@ function ManageForm({link, shortLink, ownerCode}: {
                                         )}
                                     </form.Field>
 
-                                    <form.Subscribe selector={(state) => state.values.linkExpires}>
-                                        {(linkExpires) => linkExpires && (
+                                    <form.Subscribe selector={(state) => state.values.expires}>
+                                        {(expires) => expires && (
                                             <form.Field name="expiresAt">
                                                 {(field) => (
                                                     <Field>
@@ -266,7 +274,7 @@ function ManageForm({link, shortLink, ownerCode}: {
                                                             id="expires-at"
                                                             value={field.state.value}
                                                             onChange={(date) => field.handleChange(date)}
-                                                            onBlur={field.handleBlur}
+                                                            // onBlur={field.handleBlur}
                                                             placeholder="Pick an expiration date"
                                                         />
                                                         <FieldError errors={field.state.meta.errors} />
@@ -276,7 +284,7 @@ function ManageForm({link, shortLink, ownerCode}: {
                                         )}
                                     </form.Subscribe>
 
-                                    <ButtonGroup className='ml-auto'>
+                                    <ButtonGroup className='ml-auto mt-4'>
                                         <Button
                                             type="button"
                                             variant='outline'
@@ -295,7 +303,7 @@ function ManageForm({link, shortLink, ownerCode}: {
                                                     size='sm'
                                                     disabled={isSubmitting || !isDirty}
                                                 >
-                                                    Apply changes
+                                                    {isSubmitting ? 'Applying...' : 'Apply changes'}
                                                 </Button>
                                             )}
                                         </form.Subscribe>
@@ -306,7 +314,7 @@ function ManageForm({link, shortLink, ownerCode}: {
                     </main>
                 </div>
 
-                <hr/>
+                <hr className="my-6"/>
                 <Footer/>
             </Card>
         </div>

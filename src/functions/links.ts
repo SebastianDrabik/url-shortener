@@ -8,7 +8,7 @@ import {and, eq, ne} from "drizzle-orm";
 
 export const createShortLink = createServerFn({method: 'POST'})
     .validator(z.object({
-        longUrl: z.url(),
+        longUrl: z.string().url(),
         expiresAt: z.date().min(new Date()).optional(),
     }))
     .handler((r): ({success: false} | {success: true, generatedShort: string, ownerCode: string}) => {
@@ -89,16 +89,18 @@ export const getRedirectLink = createServerFn({method: 'POST'})
         }
     })
 
+export const updateShortLinkValidationSchema = z.object({
+    shortUrl: z.string(),
+    ownerCode: z.string().length(25),
+    alias: z.string().min(4).max(10).regex(/^[A-Za-z0-9_-]+$/g, {message: "Alias can only use alphanumeric characters, _ and -"}).optional(),
+    longUrl: z.string().url(),
+    expires: z.boolean(),
+    expiresAt: z.date().min(new Date(), {message: "The date must be in the future"}).optional(),
+    active: z.boolean(),
+})
+
 export const updateShortLink = createServerFn({method: 'POST'})
-    .validator(z.object({
-        shortUrl: z.string(),
-        ownerCode: z.string(),
-        alias: z.string().optional(),
-        longUrl: z.url(),
-        expires: z.boolean(),
-        expiresAt: z.date().min(new Date()).optional(),
-        active: z.boolean(),
-    }))
+    .validator(updateShortLinkValidationSchema)
     .handler(async (r): Promise<{success: false, message: string, field?: string} | {success: true}> => {
         const linkData = await db.select().from(linksTable).where(eq(linksTable.shortUrl, r.data.shortUrl));
 

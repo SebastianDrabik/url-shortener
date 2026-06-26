@@ -36,7 +36,7 @@ function Home() {
         validators: {
             onSubmit: z.object({
                 linkExpires: z.boolean(),
-                longUrl: z.url(),
+                longUrl: z.string().url(),
                 expiration: z.date(),
             })
         },
