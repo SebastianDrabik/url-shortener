@@ -19,7 +19,7 @@ import {useQuery, useMutation, useQueryClient} from '@tanstack/react-query'
 import {InputGroup, InputGroupAddon, InputGroupInput, InputGroupText} from "#/components/ui/input-group";
 import {Switch} from "#/components/ui/switch.tsx";
 import {useForm} from "@tanstack/react-form-start";
-import {linksTable} from "#/db/schema.ts";
+import type {linksTable} from "#/db/schema.ts";
 import {Checkbox} from "#/components/ui/checkbox.tsx";
 import {Field as FieldComp, FieldGroup as FieldGroupComp} from "#/components/ui/field.tsx";
 import {DatePicker} from "#/components/ui/date-picker.tsx";

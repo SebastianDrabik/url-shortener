@@ -6,7 +6,7 @@ import {Input} from "#/components/ui/input.tsx";
 import wl from "#/assets/wl.svg"
 import {Label} from "#/components/ui/label.tsx";
 import {Checkbox} from "#/components/ui/checkbox.tsx";
-import {Field, FieldGroup, FieldLabel} from "#/components/ui/field.tsx";
+import {Field, FieldError, FieldGroup, FieldLabel} from "#/components/ui/field.tsx";
 import {Footer} from "#/components/Footer.tsx";
 import {useMutation, useQueryClient} from "@tanstack/react-query";
 
@@ -24,6 +24,12 @@ export const Route = createFileRoute('/')({
     })
 })
 
+const formSchema = z.object({
+    linkExpires: z.boolean(),
+    longUrl: z.string().url(),
+    expiration: z.date().min(new Date(), {message: 'Expiration date must be in the future'}),
+})
+
 function Home() {
     const navigate = Route.useNavigate();
 
@@ -34,11 +40,7 @@ function Home() {
             expiration: new Date(),
         },
         validators: {
-            onSubmit: z.object({
-                linkExpires: z.boolean(),
-                longUrl: z.string().url(),
-                expiration: z.date(),
-            })
+            onSubmit: formSchema
         },
         onSubmit: async ({value}) => {
             const data = await shorten({
@@ -137,6 +139,7 @@ function Home() {
                                                     onChange={(e) => field.handleChange(new Date(e.target.value))}
                                                     onBlur={field.handleBlur}
                                                 />
+                                                <FieldError errors={field.state.meta.errors} className="text-destructive text-sm mb-3"/>
                                             </div>
                                         )}
                                     </form.Field>
