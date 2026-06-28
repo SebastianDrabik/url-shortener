@@ -5,6 +5,7 @@ import {QueryClient,
   QueryClientProvider,} from "@tanstack/react-query";
 
 import appCss from '../styles.css?url'
+import {NotFound} from "#/components/NotFound.tsx";
 
 export const Route = createRootRoute({
   head: () => ({
@@ -68,6 +69,7 @@ export const Route = createRootRoute({
     ],
   }),
   shellComponent: RootDocument,
+  notFoundComponent: NotFound
 })
 
 function RootDocument({ children }: { children: React.ReactNode }) {
