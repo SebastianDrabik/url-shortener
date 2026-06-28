@@ -1,8 +1,6 @@
 import {createFileRoute} from '@tanstack/react-router'
 import * as z from 'zod'
-import {Card} from "#/components/ui/card.tsx";
 import ms from "#/assets/ms.svg";
-import {Footer} from "#/components/Footer.tsx";
 import {getLinkData, updateShortLink, updateShortLinkValidationSchema,} from "#/functions/links.ts";
 import {copyToClipboard} from "#/lib/clipboardUtil.ts";
 import {
@@ -23,6 +21,7 @@ import type {linksTable} from "#/db/schema.ts";
 import {Checkbox} from "#/components/ui/checkbox.tsx";
 import {Field as FieldComp, FieldGroup as FieldGroupComp} from "#/components/ui/field.tsx";
 import {DatePicker} from "#/components/ui/date-picker.tsx";
+import {PageTemplate} from "#/components/PageTemplate.tsx";
 
 export const Route = createFileRoute('/manage/$url')({
     component: RouteComponent,
@@ -105,7 +104,7 @@ function ManageForm({link, shortLink, ownerCode}: {
                 ownerCode,
                 alias: value.alias,
                 longUrl: value.longUrl,
-                active: !!value.active,
+                active: value.active,
                 expires: value.expires,
                 expiresAt: value.expires ? value.expiresAt : undefined,
             });
@@ -128,195 +127,178 @@ function ManageForm({link, shortLink, ownerCode}: {
     });
 
     return (
-        <div className="p-8">
-            <Card className="w-full max-w-5xl mx-auto p-6">
-                <h1 className="text-4xl text-center mb-6">
-                    <span className='text-accent-foreground font-bold'>shortURL</span> by sdrabik
-                </h1>
+        <PageTemplate img={ms} imgAlt="Manage your link" imgPlacement="right">
+            <h2 className='text-center my-3 text-3xl'>Manage your link</h2>
+            <p className='text-muted-foreground mb-4'>
+                You are managing the link <span className='font-bold'>{link.shortUrl}</span> with
+                the owner code <span className='font-bold'>{link.ownerCode}</span>. The link leads
+                to <span className='font-bold'>{link.longUrl}</span>.
+            </p>
 
-                <div className="grid md:grid-cols-2 grid-cols-1">
-                    <div className='hidden md:block'>
-                        <img src={ms} alt="Man adjusting settings"/>
+            <form.Subscribe selector={(state) => state.errorMap.onSubmit}>
+                {(submitError) => submitError ? (
+                    <div className="bg-destructive/15 text-destructive p-3 rounded-md mb-4 text-sm font-medium">
+                        {submitError instanceof Error ? submitError.message : String(submitError)}
                     </div>
-                    <main className='h-full'>
-                        <h2 className='text-center my-3 text-3xl'>Manage your link</h2>
-                        <p className='text-muted-foreground mb-4'>
-                            You are managing the link <span className='font-bold'>{link.shortUrl}</span> with
-                            the owner code <span className='font-bold'>{link.ownerCode}</span>. The link leads
-                            to <span className='font-bold'>{link.longUrl}</span>.
-                        </p>
+                ) : null}
+            </form.Subscribe>
 
-                        {/* Display global server errors */}
-                        <form.Subscribe selector={(state) => state.errorMap.onSubmit}>
-                            {(submitError) => submitError ? (
-                                <div className="bg-destructive/15 text-destructive p-3 rounded-md mb-4 text-sm font-medium">
-                                    {submitError instanceof Error ? submitError.message : String(submitError)}
-                                </div>
-                            ) : null}
-                        </form.Subscribe>
+            <form onSubmit={(e) => {
+                e.preventDefault()
+                form.handleSubmit()
+            }}>
+                <FieldSet>
+                    <FieldGroup>
+                        <Field>
+                            <FieldLabel htmlFor="short">Generated short url</FieldLabel>
+                            <ButtonGroup>
+                                <InputGroup>
+                                    <InputGroupAddon>
+                                        <InputGroupText>{window.location.origin}/</InputGroupText>
+                                    </InputGroupAddon>
+                                    <InputGroupInput id="short" defaultValue={link.shortUrl} disabled/>
+                                </InputGroup>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={() => copyToClipboard(`${window.location.origin}/${link.shortUrl}`)}
+                                >
+                                    Copy
+                                </Button>
+                            </ButtonGroup>
+                        </Field>
 
-                        <form onSubmit={(e) => {
-                            e.preventDefault()
-                            form.handleSubmit()
-                        }}>
-                            <FieldSet>
-                                <FieldGroup>
-                                    <Field>
-                                        <FieldLabel htmlFor="short">Generated short url</FieldLabel>
-                                        <ButtonGroup>
-                                            <InputGroup>
-                                                <InputGroupAddon>
-                                                    <InputGroupText>{window.location.origin}/</InputGroupText>
-                                                </InputGroupAddon>
-                                                <InputGroupInput id="short" defaultValue={link.shortUrl} disabled/>
-                                            </InputGroup>
-                                            <Button
-                                                type="button"
-                                                variant="outline"
-                                                onClick={() => copyToClipboard(`${window.location.origin}/${link.shortUrl}`)}
-                                            >
-                                                Copy
-                                            </Button>
-                                        </ButtonGroup>
-                                    </Field>
-
-                                    <form.Field name="alias">
-                                        {(field) => (
-                                            <Field>
-                                                <FieldLabel htmlFor="alias">Your alias</FieldLabel>
-                                                <ButtonGroup>
-                                                    <InputGroup>
-                                                        <InputGroupAddon>
-                                                            <InputGroupText>{window.location.origin}/</InputGroupText>
-                                                        </InputGroupAddon>
-                                                        <InputGroupInput
-                                                            id="alias"
-                                                            placeholder="awesome"
-                                                            value={field.state.value}
-                                                            onChange={(e) => field.handleChange(e.target.value)}
-                                                            onBlur={field.handleBlur}
-                                                        />
-                                                    </InputGroup>
-                                                    <form.Subscribe selector={(state) => state.values.alias}>
-                                                        {(alias) => (
-                                                            <Button
-                                                                type="button"
-                                                                variant="outline"
-                                                                onClick={() => copyToClipboard(`${window.location.origin}/${alias || link.shortUrl}`)}
-                                                            >
-                                                                Copy
-                                                            </Button>
-                                                        )}
-                                                    </form.Subscribe>
-                                                </ButtonGroup>
-                                                <FieldError errors={field.state.meta.errors} />
-                                                <FieldDescription>
-                                                    You can set your own alias for the short link. Both the generated
-                                                    URL and alias will work.
-                                                </FieldDescription>
-                                            </Field>
-                                        )}
-                                    </form.Field>
-
-                                    <form.Field name="longUrl">
-                                        {(field) => (
-                                            <Field>
-                                                <FieldLabel htmlFor="longurl">Redirect URL</FieldLabel>
-                                                <Input
-                                                    type="text"
-                                                    id="longurl"
-                                                    value={field.state.value}
-                                                    onChange={(e) => field.handleChange(e.target.value)}
-                                                    onBlur={field.handleBlur}
-                                                />
-                                                <FieldError errors={field.state.meta.errors} />
-                                            </Field>
-                                        )}
-                                    </form.Field>
-
-                                    <form.Field name="active">
-                                        {(field) => (
-                                            <Field orientation='horizontal'>
-                                                <FieldLabel htmlFor="enb">Enabled</FieldLabel>
-                                                <Switch
-                                                    id="enb"
-                                                    checked={field.state.value}
-                                                    onCheckedChange={(checked) => field.handleChange(checked)}
-                                                />
-                                            </Field>
-                                        )}
-                                    </form.Field>
-
-                                    <form.Field name="expires">
-                                        {(field) => (
-                                            <FieldGroupComp>
-                                                <FieldComp orientation="horizontal">
-                                                    <Checkbox
-                                                        id="link-expires"
-                                                        checked={field.state.value}
-                                                        onCheckedChange={(checked) => field.handleChange(!!checked)}
-                                                    />
-                                                    <FieldLabel htmlFor="link-expires">
-                                                        I want to set expiration date
-                                                    </FieldLabel>
-                                                </FieldComp>
-                                            </FieldGroupComp>
-                                        )}
-                                    </form.Field>
-
-                                    <form.Subscribe selector={(state) => state.values.expires}>
-                                        {(expires) => expires && (
-                                            <form.Field name="expiresAt">
-                                                {(field) => (
-                                                    <Field>
-                                                        <FieldLabel htmlFor="expires-at">Expiration date</FieldLabel>
-                                                        <DatePicker
-                                                            id="expires-at"
-                                                            value={field.state.value}
-                                                            onChange={(date) => field.handleChange(date)}
-                                                            // onBlur={field.handleBlur}
-                                                            placeholder="Pick an expiration date"
-                                                        />
-                                                        <FieldError errors={field.state.meta.errors} />
-                                                    </Field>
-                                                )}
-                                            </form.Field>
-                                        )}
-                                    </form.Subscribe>
-
-                                    <ButtonGroup className='ml-auto mt-4'>
-                                        <Button
-                                            type="button"
-                                            variant='outline'
-                                            size='sm'
-                                            onClick={() => copyToClipboard(`${window.location.origin}/manage/${link.shortUrl}?ownerCode=${link.ownerCode}`)}
-                                        >
-                                            Copy edit link
-                                        </Button>
-                                        <form.Subscribe selector={(state) => ({
-                                            isSubmitting: state.isSubmitting,
-                                            isDirty: state.isDirty,
-                                        })}>
-                                            {({isSubmitting, isDirty}) => (
+                        <form.Field name="alias">
+                            {(field) => (
+                                <Field>
+                                    <FieldLabel htmlFor="alias">Your alias</FieldLabel>
+                                    <ButtonGroup>
+                                        <InputGroup>
+                                            <InputGroupAddon>
+                                                <InputGroupText>{window.location.origin}/</InputGroupText>
+                                            </InputGroupAddon>
+                                            <InputGroupInput
+                                                id="alias"
+                                                placeholder="awesome"
+                                                value={field.state.value}
+                                                onChange={(e) => field.handleChange(e.target.value)}
+                                                onBlur={field.handleBlur}
+                                            />
+                                        </InputGroup>
+                                        <form.Subscribe selector={(state) => state.values.alias}>
+                                            {(alias) => (
                                                 <Button
-                                                    type="submit"
-                                                    size='sm'
-                                                    disabled={isSubmitting || !isDirty}
+                                                    type="button"
+                                                    variant="outline"
+                                                    onClick={() => copyToClipboard(`${window.location.origin}/${alias || link.shortUrl}`)}
                                                 >
-                                                    {isSubmitting ? 'Applying...' : 'Apply changes'}
+                                                    Copy
                                                 </Button>
                                             )}
                                         </form.Subscribe>
                                     </ButtonGroup>
-                                </FieldGroup>
-                            </FieldSet>
-                        </form>
-                    </main>
-                </div>
+                                    <FieldError errors={field.state.meta.errors} />
+                                    <FieldDescription>
+                                        You can set your own alias for the short link. Both the generated
+                                        URL and alias will work.
+                                    </FieldDescription>
+                                </Field>
+                            )}
+                        </form.Field>
 
-                <hr className="my-6"/>
-                <Footer/>
-            </Card>
-        </div>
+                        <form.Field name="longUrl">
+                            {(field) => (
+                                <Field>
+                                    <FieldLabel htmlFor="longurl">Redirect URL</FieldLabel>
+                                    <Input
+                                        type="text"
+                                        id="longurl"
+                                        value={field.state.value}
+                                        onChange={(e) => field.handleChange(e.target.value)}
+                                        onBlur={field.handleBlur}
+                                    />
+                                    <FieldError errors={field.state.meta.errors} />
+                                </Field>
+                            )}
+                        </form.Field>
+
+                        <form.Field name="active">
+                            {(field) => (
+                                <Field orientation='horizontal'>
+                                    <FieldLabel htmlFor="enb">Enabled</FieldLabel>
+                                    <Switch
+                                        id="enb"
+                                        checked={field.state.value}
+                                        onCheckedChange={(checked) => field.handleChange(checked)}
+                                    />
+                                </Field>
+                            )}
+                        </form.Field>
+
+                        <form.Field name="expires">
+                            {(field) => (
+                                <FieldGroupComp>
+                                    <FieldComp orientation="horizontal">
+                                        <Checkbox
+                                            id="link-expires"
+                                            checked={field.state.value}
+                                            onCheckedChange={(checked) => field.handleChange(!!checked)}
+                                        />
+                                        <FieldLabel htmlFor="link-expires">
+                                            I want to set expiration date
+                                        </FieldLabel>
+                                    </FieldComp>
+                                </FieldGroupComp>
+                            )}
+                        </form.Field>
+
+                        <form.Subscribe selector={(state) => state.values.expires}>
+                            {(expires) => expires && (
+                                <form.Field name="expiresAt">
+                                    {(field) => (
+                                        <Field>
+                                            <FieldLabel htmlFor="expires-at">Expiration date</FieldLabel>
+                                            <DatePicker
+                                                id="expires-at"
+                                                value={field.state.value}
+                                                onChange={(date) => field.handleChange(date)}
+                                                // onBlur={field.handleBlur}
+                                                placeholder="Pick an expiration date"
+                                            />
+                                            <FieldError errors={field.state.meta.errors} />
+                                        </Field>
+                                    )}
+                                </form.Field>
+                            )}
+                        </form.Subscribe>
+
+                        <ButtonGroup className='ml-auto mt-4'>
+                            <Button
+                                type="button"
+                                variant='outline'
+                                size='sm'
+                                onClick={() => copyToClipboard(`${window.location.origin}/manage/${link.shortUrl}?ownerCode=${link.ownerCode}`)}
+                            >
+                                Copy edit link
+                            </Button>
+                            <form.Subscribe selector={(state) => ({
+                                isSubmitting: state.isSubmitting,
+                                isDirty: state.isDirty,
+                            })}>
+                                {({isSubmitting, isDirty}) => (
+                                    <Button
+                                        type="submit"
+                                        size='sm'
+                                        disabled={isSubmitting || !isDirty}
+                                    >
+                                        {isSubmitting ? 'Applying...' : 'Apply changes'}
+                                    </Button>
+                                )}
+                            </form.Subscribe>
+                        </ButtonGroup>
+                    </FieldGroup>
+                </FieldSet>
+            </form>
+        </PageTemplate>
     )
 }

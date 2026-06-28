@@ -4,7 +4,7 @@ import {randomString} from "#/lib/random.ts";
 
 import {db} from '#/db'
 import {linksTable} from "#/db/schema.ts";
-import {and, eq, ne} from "drizzle-orm";
+import {and, eq, ne, or} from "drizzle-orm";
 
 export const createShortLink = createServerFn({method: 'POST'})
     .validator(z.object({
@@ -70,7 +70,7 @@ export const getRedirectLink = createServerFn({method: 'POST'})
         shortUrl: z.string()
     }))
     .handler(async (r): Promise<{success: false, message: string} | {success: true, redirect: string}> => {
-        const linkData = await db.select().from(linksTable).where(eq(linksTable.shortUrl, r.data.shortUrl));
+        const linkData = await db.select().from(linksTable).where(or(eq(linksTable.shortUrl, r.data.shortUrl), eq(linksTable.alias, r.data.shortUrl)));
 
         if (linkData.length === 0)
             return {success: false, message: 'Link does not exist'};
