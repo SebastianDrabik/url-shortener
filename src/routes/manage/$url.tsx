@@ -129,11 +129,11 @@ function ManageForm({link, shortLink, ownerCode}: {
     return (
         <PageTemplate img={ms} imgAlt="Manage your link" imgPlacement="right">
             <h2 className='text-center my-3 text-3xl'>Manage your link</h2>
-            <p className='text-muted-foreground mb-4'>
-                You are managing the link <span className='font-bold'>{link.shortUrl}</span> with
-                the owner code <span className='font-bold'>{link.ownerCode}</span>. The link leads
-                to <span className='font-bold'>{link.longUrl}</span>.
-            </p>
+            {/*<p className='text-muted-foreground mb-4'>*/}
+            {/*    You are managing the link <span className='font-bold'>{link.shortUrl}</span> with*/}
+            {/*    the owner code <span className='font-bold'>{link.ownerCode}</span>. The link leads*/}
+            {/*    to <span className='font-bold'>{link.longUrl}</span>.*/}
+            {/*</p>*/}
 
             <form.Subscribe selector={(state) => state.errorMap.onSubmit}>
                 {(submitError) => submitError ? (

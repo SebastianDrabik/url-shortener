@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as ShortUrlRouteImport } from './routes/$shortUrl'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ManageUrlRouteImport } from './routes/manage/$url'
+import { Route as CheckUrlRouteImport } from './routes/check/$url'
 
 const ShortUrlRoute = ShortUrlRouteImport.update({
   id: '/$shortUrl',
@@ -28,34 +29,43 @@ const ManageUrlRoute = ManageUrlRouteImport.update({
   path: '/manage/$url',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CheckUrlRoute = CheckUrlRouteImport.update({
+  id: '/check/$url',
+  path: '/check/$url',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/$shortUrl': typeof ShortUrlRoute
+  '/check/$url': typeof CheckUrlRoute
   '/manage/$url': typeof ManageUrlRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/$shortUrl': typeof ShortUrlRoute
+  '/check/$url': typeof CheckUrlRoute
   '/manage/$url': typeof ManageUrlRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/$shortUrl': typeof ShortUrlRoute
+  '/check/$url': typeof CheckUrlRoute
   '/manage/$url': typeof ManageUrlRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/$shortUrl' | '/manage/$url'
+  fullPaths: '/' | '/$shortUrl' | '/check/$url' | '/manage/$url'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/$shortUrl' | '/manage/$url'
-  id: '__root__' | '/' | '/$shortUrl' | '/manage/$url'
+  to: '/' | '/$shortUrl' | '/check/$url' | '/manage/$url'
+  id: '__root__' | '/' | '/$shortUrl' | '/check/$url' | '/manage/$url'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ShortUrlRoute: typeof ShortUrlRoute
+  CheckUrlRoute: typeof CheckUrlRoute
   ManageUrlRoute: typeof ManageUrlRoute
 }
 
@@ -82,12 +92,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ManageUrlRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/check/$url': {
+      id: '/check/$url'
+      path: '/check/$url'
+      fullPath: '/check/$url'
+      preLoaderRoute: typeof CheckUrlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ShortUrlRoute: ShortUrlRoute,
+  CheckUrlRoute: CheckUrlRoute,
   ManageUrlRoute: ManageUrlRoute,
 }
 export const routeTree = rootRouteImport

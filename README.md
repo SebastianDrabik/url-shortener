@@ -1,6 +1,7 @@
 # Simple URL shortener project
 
-# TODO
+## TODOs:
+- [ ] Add QR code generation for shortened URLs
 
 ## Open-source licences:
 
