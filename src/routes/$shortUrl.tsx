@@ -1,5 +1,5 @@
 import {createFileRoute, Link, redirect} from '@tanstack/react-router'
-import {getRedirectLink} from "#/functions/links.ts";
+import {getShortLinkInfo} from "#/functions/links.functions";
 import {PageTemplate} from "#/components/PageTemplate.tsx";
 import manQuestionMark from '@/assets/mq.svg'
 import {Button} from "#/components/ui/button.tsx";
@@ -8,11 +8,11 @@ import {Card} from "#/components/ui/card.tsx";
 export const Route = createFileRoute('/$shortUrl')({
   component: RouteComponent,
   loader: async ({params} ) => {
-    const l = await getRedirectLink({data: {shortUrl: params.shortUrl}})
+    const l = await getShortLinkInfo({data: {shortUrl: params.shortUrl}})
 
     if(l.success){
       throw redirect({
-        href: l.redirect,
+        href: l.data.longUrl,
         statusCode: 301,
       })
     }

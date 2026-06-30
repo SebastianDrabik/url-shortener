@@ -8,7 +8,7 @@ import {Checkbox} from "#/components/ui/checkbox.tsx";
 import {Field, FieldError, FieldGroup, FieldLabel} from "#/components/ui/field.tsx";
 import {useMutation, useQueryClient} from "@tanstack/react-query";
 
-import {createShortLink} from "#/functions/links.ts";
+import {createShortLink} from "#/functions/links.functions";
 import {Spinner} from "#/components/ui/spinner.tsx";
 import {useForm} from "@tanstack/react-form-start";
 import {z} from 'zod'
@@ -42,15 +42,15 @@ function Home() {
             onSubmit: formSchema
         },
         onSubmit: async ({value}) => {
-            const data = await shorten({
+            const response = await shorten({
                 longUrl: value.longUrl,
                 expiresAt: value.linkExpires ? value.expiration : undefined,
             });
-            if (data.success) {
+            if (response.success) {
                 navigate({
                     to: '/manage/$url',
-                    search: {ownerCode: data.ownerCode},
-                    params: {url: data.generatedShort},
+                    search: {ownerCode: response.data.ownerCode},
+                    params: {url: response.data.generatedShort},
                 });
             }
         }

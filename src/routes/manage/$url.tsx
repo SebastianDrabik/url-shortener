@@ -1,7 +1,11 @@
 import {createFileRoute} from '@tanstack/react-router'
 import * as z from 'zod'
 import ms from "#/assets/ms.svg";
-import {getLinkData, updateShortLink, updateShortLinkValidationSchema,} from "#/functions/links.ts";
+import {
+    getShortLinkFullDataOwner,
+    updateShortLink,
+    updateShortLinkValidationSchema,
+} from "#/functions/links.functions";
 import {copyToClipboard} from "#/lib/clipboardUtil.ts";
 import {
     Field,
@@ -41,7 +45,10 @@ function RouteComponent() {
     const {data, isPending} = useQuery({
         queryKey: ['shortlink', shortLink],
         queryFn: async () => {
-            return await getLinkData({data: {shortUrl: shortLink, ownerCode}})
+            return await getShortLinkFullDataOwner({data: {
+                    shortUrl: shortLink,
+                    ownerCode
+                }})
         }
     }, queryClient)
 
