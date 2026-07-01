@@ -68,6 +68,9 @@ const formSchema = updateShortLinkValidationSchema.innerType().omit({
     ownerCode: true,
 }).superRefine((val, ctx) => {
     if (val.expires) {
+        if (!val.active) {
+            ctx.addIssue({code: z.ZodIssueCode.custom, message: 'Link must be active to set an expiration date', path: ['active']});
+        }
         if (!val.expiresAt) {
             ctx.addIssue({code: z.ZodIssueCode.custom, message: 'Please select an expiration date', path: ['expiresAt']});
         } else if (val.expiresAt < new Date()) {
@@ -243,13 +246,16 @@ function ManageForm({link, shortLink, ownerCode}: {
 
                         <form.Field name="active">
                             {(field) => (
-                                <Field orientation='horizontal'>
-                                    <FieldLabel htmlFor="enb">Enabled</FieldLabel>
-                                    <Switch
-                                        id="enb"
-                                        checked={field.state.value}
-                                        onCheckedChange={(checked) => field.handleChange(checked)}
-                                    />
+                                <Field>
+                                    <div className='flex justify-between'>
+                                        <FieldLabel htmlFor="enb">Enabled</FieldLabel>
+                                        <Switch
+                                            id="enb"
+                                            checked={field.state.value}
+                                            onCheckedChange={(checked) => field.handleChange(checked)}
+                                        />
+                                    </div>
+                                    <FieldError errors={field.state.meta.errors} />
                                 </Field>
                             )}
                         </form.Field>

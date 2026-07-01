@@ -104,6 +104,9 @@ export const updateShortLinkValidationSchema = z.object({
     active: z.boolean(),
 }).superRefine((val, ctx) => {
     if (val.expires) {
+        if (!val.active) {
+            ctx.addIssue({code: z.ZodIssueCode.custom, message: 'Link must be active to set an expiration date', path: ['active']});
+        }
         if (!val.expiresAt) {
             ctx.addIssue({code: z.ZodIssueCode.custom, message: 'Please select an expiration date', path: ['expiresAt']});
         } else if (val.expiresAt < new Date()) {
