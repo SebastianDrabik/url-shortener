@@ -2,7 +2,7 @@
 
 ## TODOs:
 - [ ] Add QR code generation for shortened URLs
-- [ ] fix `Error in renderToReadableStream: ReferenceError: location is not defined`
+- [x] fix `Error in renderToReadableStream: ReferenceError: location is not defined`
 
 ## Open-source licences:
 

@@ -26,6 +26,7 @@ import {Checkbox} from "#/components/ui/checkbox.tsx";
 import {Field as FieldComp, FieldGroup as FieldGroupComp} from "#/components/ui/field.tsx";
 import {DatePicker} from "#/components/ui/date-picker.tsx";
 import {PageTemplate} from "#/components/PageTemplate.tsx";
+import {getSiteUrl} from "#/lib/urlUtil.ts";
 
 export const Route = createFileRoute('/manage/$url')({
     component: RouteComponent,
@@ -161,14 +162,14 @@ function ManageForm({link, shortLink, ownerCode}: {
                             <ButtonGroup>
                                 <InputGroup>
                                     <InputGroupAddon>
-                                        <InputGroupText>{window.location.origin}/</InputGroupText>
+                                        <InputGroupText>{getSiteUrl()}/</InputGroupText>
                                     </InputGroupAddon>
                                     <InputGroupInput id="short" defaultValue={link.shortUrl} disabled/>
                                 </InputGroup>
                                 <Button
                                     type="button"
                                     variant="outline"
-                                    onClick={() => copyToClipboard(`${window.location.origin}/${link.shortUrl}`)}
+                                    onClick={() => copyToClipboard(`${getSiteUrl()}/${link.shortUrl}`)}
                                 >
                                     Copy
                                 </Button>

@@ -40,7 +40,6 @@ function RouteComponent() {
         <h4 className='font-semibold'>Reason:</h4>
         <p className='text-muted-foreground'>{link.message}</p>
       </Card>
-
     </div>
   </PageTemplate>
 }

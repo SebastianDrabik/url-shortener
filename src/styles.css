@@ -181,3 +181,7 @@
     letter-spacing: var(--tracking-normal);
   }
 }
+
+a {
+  @apply underline text-orange-200;
+}
