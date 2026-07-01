@@ -93,13 +93,24 @@ export const getShortLinkFullDataOwner = createServerFn({method: 'POST'})
 
 export const updateShortLinkValidationSchema = z.object({
     shortUrl: z.string(),
-    ownerCode: z.string().length(25),
-    alias: z.string().min(4).max(10).regex(/^[A-Za-z0-9_-]+$/g, {message: "Alias can only use alphanumeric characters, _ and -"}).optional(),
+    ownerCode: z.string().length(16),
+    alias: z.string().max(10).optional().refine(
+        (val) => !val || (val.length >= 4 && /^[A-Za-z0-9_-]+$/.test(val)),
+        { message: "Alias can only use alphanumeric characters, _ and -, and must be 4-10 characters" }
+    ),
     longUrl: z.string().url(),
     expires: z.boolean(),
-    expiresAt: z.date().min(new Date(), {message: "The date must be in the future"}).optional(),
+    expiresAt: z.date().optional(),
     active: z.boolean(),
-})
+}).superRefine((val, ctx) => {
+    if (val.expires) {
+        if (!val.expiresAt) {
+            ctx.addIssue({code: z.ZodIssueCode.custom, message: 'Please select an expiration date', path: ['expiresAt']});
+        } else if (val.expiresAt < new Date()) {
+            ctx.addIssue({code: z.ZodIssueCode.custom, message: 'The date must be in the future', path: ['expiresAt']});
+        }
+    }
+});
 
 export const updateShortLink = createServerFn({method: 'POST'})
     .validator(updateShortLinkValidationSchema)
@@ -127,7 +138,7 @@ export const updateShortLink = createServerFn({method: 'POST'})
 
         const updateRes = await db.update(linksTable).set({
             longUrl: r.data.longUrl,
-            alias: r.data.alias,
+            alias: r.data.alias ? (r.data.alias.length === 0 ? null : r.data.alias) : null,
             expiresAt: r.data.expires ? r.data.expiresAt : null,
             active: r.data.active
         }).where(eq(linksTable.shortUrl, r.data.shortUrl));

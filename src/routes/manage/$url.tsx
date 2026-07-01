@@ -63,10 +63,18 @@ function RouteComponent() {
     return <ManageForm link={link} shortLink={shortLink} ownerCode={ownerCode}/>
 }
 
-const formSchema = updateShortLinkValidationSchema.refine(
-    (val) => !val.expires || val.expiresAt !== undefined,
-    { message: 'Please select an expiration date', path: ['expiresAt'] }
-);
+const formSchema = updateShortLinkValidationSchema.innerType().omit({
+    shortUrl: true,
+    ownerCode: true,
+}).superRefine((val, ctx) => {
+    if (val.expires) {
+        if (!val.expiresAt) {
+            ctx.addIssue({code: z.ZodIssueCode.custom, message: 'Please select an expiration date', path: ['expiresAt']});
+        } else if (val.expiresAt < new Date()) {
+            ctx.addIssue({code: z.ZodIssueCode.custom, message: 'The date must be in the future', path: ['expiresAt']});
+        }
+    }
+});
 
 function ManageForm({link, shortLink, ownerCode}: {
     link: typeof linksTable.$inferSelect;
@@ -116,6 +124,9 @@ function ManageForm({link, shortLink, ownerCode}: {
                 expires: value.expires,
                 expiresAt: value.expires ? value.expiresAt : undefined,
             });
+
+            console.log(result
+            )
 
             if (!result.success) {
                 if (result.field) {
@@ -183,7 +194,7 @@ function ManageForm({link, shortLink, ownerCode}: {
                                     <ButtonGroup>
                                         <InputGroup>
                                             <InputGroupAddon>
-                                                <InputGroupText>{window.location.origin}/</InputGroupText>
+                                                <InputGroupText>{getSiteUrl()}/</InputGroupText>
                                             </InputGroupAddon>
                                             <InputGroupInput
                                                 id="alias"
@@ -198,7 +209,7 @@ function ManageForm({link, shortLink, ownerCode}: {
                                                 <Button
                                                     type="button"
                                                     variant="outline"
-                                                    onClick={() => copyToClipboard(`${window.location.origin}/${alias || link.shortUrl}`)}
+                                                    onClick={() => copyToClipboard(`${getSiteUrl()}/${alias || link.shortUrl}`)}
                                                 >
                                                     Copy
                                                 </Button>
@@ -250,7 +261,10 @@ function ManageForm({link, shortLink, ownerCode}: {
                                         <Checkbox
                                             id="link-expires"
                                             checked={field.state.value}
-                                            onCheckedChange={(checked) => field.handleChange(!!checked)}
+                                            onCheckedChange={(checked) => {
+                                                field.handleChange(!!checked)
+                                                if (!checked) form.setFieldValue('expiresAt', undefined)
+                                            }}
                                         />
                                         <FieldLabel htmlFor="link-expires">
                                             I want to set expiration date
